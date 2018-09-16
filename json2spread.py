@@ -1,6 +1,7 @@
 import json
 import csv
 import urllib3
+import re
 
 spreadsheet = open("output.csv", "w")
 
@@ -19,12 +20,15 @@ def httpReq(URL):
     http = urllib3.PoolManager()
 
     r = http.request("GET", URL,
-            data=None,
             headers={
                 "User-Agent": "backupbot v0.01 by node1729 (on GitHub)"
                 })
-    data = json.loads(r.data.decode("utf-8"))
-        
+
+    output = json.loads(r.data.decode("utf-8"))
+    
+    output = output["data"]
+
+    return output
 
 with spreadsheet:
     fieldnames = ["place", "id", "weblink", "game", "level", "category", "videos", "comment", "status", "examiner", "verify-date", "players", "date", "submitted", "times", "system", "splits", "values"]
@@ -38,9 +42,20 @@ with spreadsheet:
         for key in data["runs"][x]["run"]:
             outDict[key] = data["runs"][x]["run"][key]
         
-#        for outKey in outDict:
-#            if outKey == "game":
-                 
+        for outKey in outDict:
+            if outKey == "game":
+                game = httpReq("https://speedrun.com/api/v1/games/" + outDict["game"])
+                outDict["game"] = game["names"]["international"]
+                print(outDict["game"])
+            if outKey == "players":
+                for item in outDict["players"]:
+                    if item["rel"] == "guest":
+                        outDict["players"] = re.split("]", item["name"])[1]
+
+                    elif item["rel"] == "user":
+                        user = httpReq("https://speedrun.com/api/v1/users/" + item["id"])
+                        outDict["players"] = user["names"]["international"]
+
         writer.writerow(outDict)
         x += 1
 
