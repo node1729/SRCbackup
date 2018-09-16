@@ -37,26 +37,47 @@ with spreadsheet:
     
     writer.writeheader()
     x = 0
+
+    #Get Game and Category names.
+    game = httpReq("https://speedrun.com/api/v1/games/" + data["game"])
+    game = game["names"]["international"]
+    category = httpReq("https://speedrun.com/api/v1/categories/" + data["category"])
+    category = category["name"]
+
     while x < len(data["runs"]):
+        #build a new dictionary in order to write to the spreadsheet more effectively with place.
         outDict = {"place": data["runs"][x]["place"]}
         for key in data["runs"][x]["run"]:
             outDict[key] = data["runs"][x]["run"][key]
         
+        videosLen = len(outDict["videos"]["links"])
         for outKey in outDict:
+            players = []
+            videos = []
+            #replaces id with human readable name
             if outKey == "game":
-                game = httpReq("https://speedrun.com/api/v1/games/" + outDict["game"])
-                outDict["game"] = game["names"]["international"]
-                print(outDict["game"])
-            if outKey == "players":
+                outDict["game"] = game
+            elif outKey == "category":
+                outDict["category"] = category
+
+            elif outKey == "players":
                 for item in outDict["players"]:
                     if item["rel"] == "guest":
-                        outDict["players"] = re.split("]", item["name"])[1]
-
+                        players.append(re.split("]", item["name"])[1])
+                    #convert user ID to real name
                     elif item["rel"] == "user":
                         user = httpReq("https://speedrun.com/api/v1/users/" + item["id"])
-                        outDict["players"] = user["names"]["international"]
+                        players.append(user["names"]["international"])
+            
+                outDict["players"] = players
 
+            elif outKey == "videos":
+                for key in outDict["videos"]:
+                    for item in outDict[outKey][key]:
+                        videos.append(item["uri"])
+
+                outDict["videos"] = videos
+            
+            
         writer.writerow(outDict)
         x += 1
-
-
