@@ -49,8 +49,10 @@ with spreadsheet:
         outDict = {"place": data["runs"][x]["place"]}
         for key in data["runs"][x]["run"]:
             outDict[key] = data["runs"][x]["run"][key]
-        
-        videosLen = len(outDict["videos"]["links"])
+        try:        
+            videosLen = len(outDict["videos"]["links"])
+        except TypeError:
+            videosLen = 0
         for outKey in outDict:
             players = []
             videos = []
@@ -71,7 +73,7 @@ with spreadsheet:
             
                 outDict["players"] = players
 
-            elif outKey == "videos":
+            elif outKey == "videos" and videosLen != :
                 for key in outDict["videos"]:
                     for item in outDict[outKey][key]:
                         videos.append(item["uri"])
