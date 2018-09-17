@@ -73,7 +73,7 @@ with spreadsheet:
             
                 outDict["players"] = players
 
-            elif outKey == "videos" and videosLen != :
+            elif outKey == "videos" and videosLen != 0:
                 for key in outDict["videos"]:
                     for item in outDict[outKey][key]:
                         videos.append(item["uri"])
