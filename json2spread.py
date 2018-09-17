@@ -55,13 +55,16 @@ with spreadsheet:
             videosLen = 0
         for outKey in outDict:
             players = []
+            playersStr = ""
             videos = []
+            videosStr = ""
             #replaces id with human readable name
             if outKey == "game":
                 outDict["game"] = game
             elif outKey == "category":
                 outDict["category"] = category
-
+            
+            #get players
             elif outKey == "players":
                 for item in outDict["players"]:
                     if item["rel"] == "guest":
@@ -70,16 +73,42 @@ with spreadsheet:
                     elif item["rel"] == "user":
                         user = httpReq("https://speedrun.com/api/v1/users/" + item["id"])
                         players.append(user["names"]["international"])
+                    for item in players:
+                        if item == players[-1]:
+                            playersStr += item
+                        else:
+                            playersStr += item + "\r\n"
+                outDict["players"] = playersStr
             
-                outDict["players"] = players
-
+            #get videos
             elif outKey == "videos" and videosLen != 0:
                 for key in outDict["videos"]:
                     for item in outDict[outKey][key]:
                         videos.append(item["uri"])
-
-                outDict["videos"] = videos
+                for item in videos:
+                    if item == videos[-1]:
+                        videosStr += item
+                    else:
+                        videosStr += item + "\r\n"
+                outDict["videos"] = videosStr
             
+            #get platform and region
+            elif outKey == "system":
+                for key in outDict["system"]:
+                    if key == "platform":
+                        platform = httpReq("https://speedrun.com/api/v1/platforms/" + outDict["system"]["platform"])
+                        platform = platform["name"]
+                    elif key == "region":
+                        region = httpReq("https://speedrun.com/api/v1/regions/" + outDict["system"]["region"])
+                        region = region["name"]
+                    elif key == "emulated":
+                        if outDict["system"]["emulated"]:
+                            emulated = " [EMU]"
+                        else:
+                            emulated = ""
+                outDict["system"] = region + " " + platform + emulated
+
+
             
         writer.writerow(outDict)
         x += 1
