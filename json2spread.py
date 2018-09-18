@@ -26,7 +26,7 @@ def httpReq(URL):
                 })
 
     output = json.loads(r.data.decode("utf-8"))
-    
+
     output = output["data"]
 
     return output
@@ -35,7 +35,7 @@ with spreadsheet:
     fieldnames = ["place", "id", "weblink", "game", "level", "category", "videos", "comment", "status", "examiner", "verify-date", "players", "date", "submitted", "times", "system", "splits", "values"]
 
     writer = csv.DictWriter(spreadsheet, fieldnames=fieldnames)
-    
+
     writer.writeheader()
     x = 0
 
@@ -45,12 +45,13 @@ with spreadsheet:
     category = httpReq("https://speedrun.com/api/v1/categories/" + data["category"])
     category = category["name"]
 
+    playersDict = {}
     while x < len(data["runs"]):
         #build a new dictionary in order to write to the spreadsheet more effectively with place.
         outDict = {"place": data["runs"][x]["place"]}
         for key in data["runs"][x]["run"]:
             outDict[key] = data["runs"][x]["run"][key]
-        try:        
+        try:
             videosLen = len(outDict["videos"]["links"])
         except TypeError:
             videosLen = 0
@@ -66,7 +67,7 @@ with spreadsheet:
                 outDict["game"] = game
             elif outKey == "category":
                 outDict["category"] = category
-            
+
             #get players
             elif outKey == "players":
                 for item in outDict["players"]:
@@ -74,19 +75,26 @@ with spreadsheet:
                         players.append(re.split("]", item["name"])[1])
                     #convert user ID to real name
                     elif item["rel"] == "user":
-                        user = httpReq("https://speedrun.com/api/v1/users/" + item["id"])
-                        players.append(user["names"]["international"])
+                        if item["id"] not in playersDict:
+                            user = httpReq("https://speedrun.com/api/v1/users/" + item["id"])
+                            players.append(user["names"]["international"])
+                            playersDict[item["id"]] = user["names"]["international"]
+                            print("added to playersDict " + user["names"]["international"])
+                        else:
+                            user = playersDict[item["id"]]
+                            players.append(user)
+
                     for item in players:
                         if item == players[-1]:
                             playersStr += item
                         else:
                             playersStr += item + "\r\n"
                 outDict["players"] = playersStr
-            
+
             #get videos
             elif outKey == "videos" and videosLen != 0:
                 for key in outDict["videos"]:
-                    for item in outDict[outKey][key]:
+                    for item in outDict["videos"][key]:
                         videos.append(item["uri"])
                 for item in videos:
                     if item == videos[-1]:
@@ -94,7 +102,7 @@ with spreadsheet:
                     else:
                         videosStr += item + "\r\n"
                 outDict["videos"] = videosStr
-            
+
             #get platform and region
             elif outKey == "system":
                 for key in outDict["system"]:
@@ -110,14 +118,19 @@ with spreadsheet:
                         else:
                             emulated = ""
                 outDict["system"] = region + " " + platform + emulated
-            
+
             #get verifier
             elif outKey == "status":
                 for key in outDict["status"]:
                     if key == "examiner":
                         if outDict["status"]["examiner"] != None:
-                            examiner = httpReq("https://speedrun.com/api/v1/users/" + outDict["status"]["examiner"])
-                            examiner = examiner["names"]["international"]
+                            if outDict["status"]["examiner"] in playersDict:
+                                examiner = playersDict[outDict["status"]["examiner"]]
+                            else:
+                                examiner = httpReq("https://speedrun.com/api/v1/users/" + outDict["status"]["examiner"])
+                                examiner = examiner["names"]["international"]
+                                playersDict[outDict["status"]["examiner"]] = examiner
+                                print("added to playersDict " + examiner)
                         else:
                             examiner = "[UNKNOWN]"
                     elif key == "verify-date":
@@ -126,18 +139,19 @@ with spreadsheet:
                         else:
                             dateVerified = "[UNKNOWN]"
                 outDict["status"] = "Verified by " + examiner + " on " + dateVerified
-            
+
             #get splits
             elif outKey == "splits" and outDict["splits"] != None:
                 for key in outDict["splits"]:
                     if key == "uri":
                         outDict["splits"] = outDict["splits"]["uri"]
-            
+
             elif outKey == "times":
                 for key in outDict["times"]:
                     if key == "primary_t":
                         second = int(outDict["times"]["primary_t"])
                         second = str(datetime.timedelta(seconds=second))
                 outDict["times"] = second
+
         writer.writerow(outDict)
         x += 1
