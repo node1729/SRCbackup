@@ -2,6 +2,7 @@ import json
 import csv
 import urllib3
 import re
+import datetime
 
 spreadsheet = open("output.csv", "w")
 
@@ -58,6 +59,8 @@ with spreadsheet:
             playersStr = ""
             videos = []
             videosStr = ""
+            splits = []
+            splitsStr = ""
             #replaces id with human readable name
             if outKey == "game":
                 outDict["game"] = game
@@ -107,8 +110,28 @@ with spreadsheet:
                         else:
                             emulated = ""
                 outDict["system"] = region + " " + platform + emulated
-
-
             
+            #get verifier
+            elif outKey == "status":
+                for key in outDict["status"]:
+                    if key == "examiner":
+                        examiner = httpReq("https://speedrun.com/api/v1/users/" + outDict["status"]["examiner"])
+                        examiner = examiner["names"]["international"]
+                    elif key == "verify-date":
+                        dateVerified = outDict["status"]["verify-date"]
+                outDict["status"] = "Verified by " + examiner + " on " + dateVerified
+            
+            #get splits
+            elif outKey == "splits" and outDict["splits"] != None:
+                for key in outDict["splits"]:
+                    if key == "uri":
+                        outDict["splits"] = outDict["splits"]["uri"]
+            
+            elif outKey == "times":
+                for key in outDict["times"]:
+                    if key == "primary_t":
+                        second = int(outDict["times"]["primary_t"])
+                        second = str(datetime.timedelta(seconds=second))
+                outDict["times"] = second
         writer.writerow(outDict)
         x += 1
