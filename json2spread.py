@@ -115,10 +115,16 @@ with spreadsheet:
             elif outKey == "status":
                 for key in outDict["status"]:
                     if key == "examiner":
-                        examiner = httpReq("https://speedrun.com/api/v1/users/" + outDict["status"]["examiner"])
-                        examiner = examiner["names"]["international"]
+                        if outDict["status"]["examiner"] != None:
+                            examiner = httpReq("https://speedrun.com/api/v1/users/" + outDict["status"]["examiner"])
+                            examiner = examiner["names"]["international"]
+                        else:
+                            examiner = "[UNKNOWN]"
                     elif key == "verify-date":
-                        dateVerified = outDict["status"]["verify-date"]
+                        if outDict["status"]["verify-date"] != None:
+                            dateVerified = outDict["status"]["verify-date"]
+                        else:
+                            dateVerified = "[UNKNOWN]"
                 outDict["status"] = "Verified by " + examiner + " on " + dateVerified
             
             #get splits
