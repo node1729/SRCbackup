@@ -1,6 +1,7 @@
 import json
 import csv
 import urllib3
+import certifi
 import re
 import datetime
 
@@ -18,7 +19,9 @@ print(data["game"])
 
 def httpReq(URL):
 
-    http = urllib3.PoolManager()
+    http = urllib3.PoolManager(
+            cert_reqs="CERT_REQUIRED",
+            ca_certs=certifi.where())
 
     r = http.request("GET", URL,
             headers={
@@ -144,8 +147,9 @@ with spreadsheet:
             elif outKey == "splits" and outDict["splits"] != None:
                 for key in outDict["splits"]:
                     if key == "uri":
+                        outDict["splits"]["uri"] = outDict["splits"]["uri"].replace("api/v3/runs/", "")
                         outDict["splits"] = outDict["splits"]["uri"]
-
+                        
             elif outKey == "times":
                 for key in outDict["times"]:
                     if key == "primary_t":

@@ -1,14 +1,15 @@
 import json
-
+import certifi
 import urllib3
 
-http = urllib3.PoolManager()
+http = urllib3.PoolManager(
+        cert_reqs="CERT_REQUIRED",
+        ca_certs=certifi.where())
 
-game = 
-category = 
+game = "pikmin2"
+category = "Pay_Off_Debt"
 
 r = http.request("GET", "http://speedrun.com/api/v1/leaderboards/" + game + "/category/" + category,
-        data=None,
         headers={
             "User-Agent": "backupbot v0.01 by node1729 (on GitHub)"
             })
